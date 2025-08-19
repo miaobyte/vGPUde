@@ -32,6 +32,25 @@ void triekv_setmeta(void *pool, const size_t size, const size_t chartype,const s
     LOG("index size: %u", meta->index_size);
 
 }
+/*
+{   
+    arrayhead
+        uint64 element_size
+        uint64 size
+        uint64 freelist_next:
+    arraydata[]
+        freelist_pre
+        freelist_next
+        data
+        
+}
+*/
+void  list_init(void *list, const size_t element_size, const size_t size);
+void  list_mark_use(void *list);
+void  list_mark_ususe(void *list);
+static void  list_append(void *list);
+static void  list_dellast(void *list);
+
 
 /*
 {   
@@ -41,12 +60,6 @@ void triekv_setmeta(void *pool, const size_t size, const size_t chartype,const s
     node childs[chartype]
 }
 */
-
-void triekv_indexnode_append()
-void triekv_indexnode_dellast()
-void triekv_indexnode_use()
-void triekv_indexnode_ususe()
-
 void triekv_set(void *pool,const void *key, const size_t keylen,const void *value, const size_t valuelen){
     if (!pool || !key || keylen == 0) return;
 
