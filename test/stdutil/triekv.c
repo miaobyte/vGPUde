@@ -1,23 +1,23 @@
-#include "../../src/stdutil/mempool.h"
+#include "stdutil/triekv.h"
 
 #define POOL_SIZE (1 << 20) // 1MB内存池
+
+void test_meta(char* mem_pool){
+     // 初始化内存池
+    triekv_setmeta(mem_pool, POOL_SIZE,37);
+    
+    size_t size, chartype;
+    triekv_getmeta(mem_pool, &size, &chartype);
+    
+    // 输出内存池元数据
+    printf("Memory Pool Size: %zu bytes\n", size);
+    printf("Character Type Count: %zu\n", chartype);
+}
 
 int main() {
     char mem_pool[POOL_SIZE];
     
-    // 初始化内存池
-    init_mem_pool(mem_pool, POOL_SIZE);
-    
-    // 分配内存
-    int *arr = (int*)value_malloc(mem_pool,1024 * sizeof(int));
-    char *str = (char*)value_malloc(mem_pool,128);
-    
-    // 使用内存
-    // ...
-    
-    // 释放内存
-    value_free(mem_pool,arr);
-    value_free(mem_pool,str);
+    test_meta(mem_pool);
     
     return 0;
 }
