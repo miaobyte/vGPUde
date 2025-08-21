@@ -17,7 +17,7 @@ typedef struct {
 } TrieKVMeta;
 
 void triekv_setmeta(const void* pool,const size_t pool_size, const size_t chartype,const size_t dataoffset_size, const size_t indexoffset_size){
-    if( !pool ||pool_size){
+    if( !pool ||pool_size<sizeof(TrieKVMeta)){
         return;
     }
     TrieKVMeta *meta = (TrieKVMeta *)pool;
