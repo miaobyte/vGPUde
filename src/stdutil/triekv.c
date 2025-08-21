@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "stdutil/triekv.h"
 #include "stdutil/logutil.h"
 
 
@@ -15,11 +16,12 @@ typedef struct {
     uint16_t index_size;
 } TrieKVMeta;
 
-void triekv_setmeta(void *pool, const size_t size, const size_t chartype,const size_t dataoffset_size, const size_t indexoffset_size) {
-    if (!pool) return;
-
+void triekv_setmeta(const void* pool,const size_t pool_size, const size_t chartype,const size_t dataoffset_size, const size_t indexoffset_size){
+    if( !pool ||pool_size){
+        return;
+    }
     TrieKVMeta *meta = (TrieKVMeta *)pool;
-    meta->pool_size=(uint64_t)size;
+    meta->pool_size=(uint64_t)pool_size;
     meta->char_type=(uint16_t)chartype;
     meta->dataoffset_size = (uint8_t)dataoffset_size;
     meta->indexoffset_size = (uint8_t)indexoffset_size;
@@ -51,7 +53,6 @@ void  list_mark_ususe(void *list);
 static void  list_append(void *list);
 static void  list_dellast(void *list);
 
-
 /*
 {   
     node parent
@@ -60,19 +61,19 @@ static void  list_dellast(void *list);
     node childs[chartype]
 }
 */
-void triekv_set(void *pool,const void *key, const size_t keylen,const void *value, const size_t valuelen){
-    if (!pool || !key || keylen == 0) return;
+void triekv_set(const bytes_t pool,const bytes_t key,const bytes_t value){
+    if (!pool.data || !key.len<=0) return;
 
-    TrieKVMeta *meta = (TrieKVMeta *)pool;
-    void *trie_root = pool + sizeof(TrieKVMeta);
+    TrieKVMeta *meta = (TrieKVMeta *)pool.data;
+    void *trie_root = pool.data + sizeof(TrieKVMeta);
     void *cur_node = trie_root;
 
-    for (size_t i = 0; i < keylen; i++) {
+    for (size_t i = 0; i < key.len; i++) {
         //当前字符的索引
-        uint8_t char_index = ((uint8_t *)key)[i];
+        uint8_t char_index = ((uint8_t *)key.data)[i];
 
         size_t node_offset = char_index * meta->indexoffset_size;
     }
 }
-void triekv_get(const void *pool, const void *key, const size_t keylen, void *value, size_t *valuelen);
-void triekv_del(void *pool, const void *key, const size_t keylen);
+bytes_t triekv_get(const bytes_t pool,const bytes_t key);
+void triekv_del(const bytes_t pool,const bytes_t key);
