@@ -2,41 +2,13 @@
 
 void init_blocks(uint8_t *blocks_start,const size_t total_size,const size_t block_size)
 {
-    uint8_t *p =blocks_start;
-    // total_size
-    *(size_t *)p = total_size;
-    p += sizeof(total_size);
-
-    // block_size
-    *(size_t *)p =block_size;
-    p += sizeof(block_size);
-
-    // total_blocks
-    *(size_t *)p = 0;
-    p += sizeof(total_size/block_size);
-
-    // used_blocks
-    *(size_t *)p = 0;
-    p += sizeof(size_t);
-
-    // free_next_id
-    *(size_t *)p = -1; // 初始化为 -1，表示没有空闲块，需要新增分配
-}
-
-void layout_block(uint8_t *block_start, block_t block)
-{
-    uint8_t *p = block_start;
-
-    // block.id
-    *(size_t *)p = block.id;
-    p += sizeof(block.id);
-
-    // block.used
-    *p = block.used;
-    p += sizeof(block.used);
-
-    // block.free_next_id
-    *(size_t *)p = block.free_next_id;
+    blocks_t *block =(blocks_t *)blocks_start;
+    block->total_size=total_size;
+    block->block_size=block_size;
+    block->total_blocks=0;
+    block->used_blocks=0;
+    block->free_next_id=-1;// 初始化为 -1，表示没有空闲块，需要新增分配
+    return;
 }
 
 block_t* block_ptr(blocks_t *blocks, size_t id)
@@ -52,7 +24,6 @@ block_t* block_ptr(blocks_t *blocks, size_t id)
 
 block_t blocks_alloc(blocks_t *blocks) {
     if (blocks->free_next_id == (size_t)-1) {
-        LOG("No free blocks available,need to append a new block.");
         size_t totalused_size = sizeof(blocks_t) + blocks->total_blocks * blocks->block_size;
         if (totalused_size + blocks->block_size > blocks->total_size) {
             LOG("Out of memory. %zu(totalused_size)= %zu(blocks_t)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
@@ -61,15 +32,16 @@ block_t blocks_alloc(blocks_t *blocks) {
             block.id = (size_t)-1; // Return invalid block
             return block;
         } else {
-            
-            block_t* new_block = (block_t*)((uint8_t*)blocks + totalused_size);
+            blocks->total_blocks++;
+            blocks->used_blocks++;
+
+            block_t* new_block =block_ptr(blocks, blocks->total_blocks-1);
             *new_block = (block_t){
-                .id = blocks->total_blocks,
+                .id = blocks->total_blocks-1,
                 .used = 1,
                 .free_next_id = (size_t)-1,
             };
-            blocks->total_blocks++;
-            blocks->used_blocks++;
+           
 
             LOG("append new block %zu,blocks usage: %zu / %zu",
                  new_block->id,blocks->used_blocks,blocks->total_blocks);
@@ -83,8 +55,8 @@ block_t blocks_alloc(blocks_t *blocks) {
     blocks->free_next_id = free_block->free_next_id;
     blocks->used_blocks++;
 
-    LOG("Reusing free block. Block ID: %zu, Used blocks: %zu, Free blocks: %zu",
-        free_id, blocks->used_blocks, blocks->total_blocks - blocks->used_blocks);
+    LOG("Reusing free block %zu, Used blocks: %zu/%zu",
+        free_id, blocks->used_blocks, blocks->total_blocks);
 
     return *free_block;
 }
