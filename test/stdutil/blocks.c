@@ -25,12 +25,15 @@ void test_free(blocks_t *blocks) {
     blocks_alloc(blocks);
     blocks_free(blocks,9);
     blocks_free(blocks,3);
-    block=blocks_alloc(blocks);
+    blocks_alloc(blocks);
+    blocks_free(blocks,5);
+    blocks_free(blocks,4);
+    blocks_alloc(blocks);
 }
 
 int main() {
     BYTES_BUFFER(pool,1024*4);
-    init_blocks(pool.data, pool.len, 64);
+    blocks_t* blocks= init_blocks(pool.data, pool.len, 64);
     // test_alloc((blocks_t *)pool.data);
-    test_free((blocks_t *)pool.data);
+    test_free(blocks);
 }
