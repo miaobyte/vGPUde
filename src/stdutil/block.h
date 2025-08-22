@@ -13,21 +13,19 @@ typedef struct {
     size_t total_blocks; // 总块数
     size_t used_blocks; // 已使用的块数
     size_t free_next_id; // 首个空闲块的id,if no free block, this is -1;
-} blocks_t;
+} __attribute__((packed)) blocks_t;
 
-void layout_blocks(uint8_t *blocks_start,blocks_t  blocks);
-
+void init_blocks(uint8_t *blocks_start,const size_t total_size,const size_t block_size);
 
 typedef struct {
     size_t id;
     uint8_t used;// 0: free, 1: used
     size_t free_next_id;// -1,or id;
-} block_t;
-size_t block_ptr(blocks_t blocks, size_t id);
-void layout_block(uint8_t *block_start,block_t block);
+} __attribute__((packed)) block_t;
 
+block_t*  block_ptr(blocks_t *blocks, size_t id);
 
-block_t blocks_alloc(blocks_t* blocks); 
-void blocks_free(blocks_t blocks,size_t id);
+block_t blocks_alloc(blocks_t *blocks); 
+void blocks_free(blocks_t *blocks,size_t id);
 
 #endif // __BLOCK_H__
