@@ -1,13 +1,13 @@
 #include "stdutil/block.h"
 
-int init_blocks(void *block_start,const uint64_t total_size, const uint64_t block_size,blocks_t* blocks )
+int init_blocks(void *block_start,const uint64_t total_size, const uint64_t block_size,blocks_meta* blocks )
 {
     if (total_size < sizeof(block_t))
     {
-        LOG("Total size %zu is too small for blocks_t and block_t structures", total_size);
+        LOG("Total size %zu is too small for blocks_meta and block_t structures", total_size);
         return -1;
     }
-    *blocks=(blocks_t){
+    *blocks=(blocks_meta){
         .total_size = total_size,
         .block_size = block_size,
         .total_blocks = 0,
@@ -18,7 +18,7 @@ int init_blocks(void *block_start,const uint64_t total_size, const uint64_t bloc
     return 0;
 }
 
-block_t *block_ptr(const blocks_t* blocks,const uint64_t id)
+block_t *block_ptr(const blocks_meta* blocks,const uint64_t id)
 {
     if (id >= (blocks->total_blocks))
     {
@@ -29,15 +29,15 @@ block_t *block_ptr(const blocks_t* blocks,const uint64_t id)
     return (block_t *)ptr;
 }
 
-block_t* blocks_alloc(blocks_t* blocks)
+block_t* blocks_alloc(blocks_meta* blocks)
 {
     if (blocks->free_next_id == -1)
     {
         uint64_t totalused_size = blocks->total_blocks * blocks->block_size;
         if (totalused_size + blocks->block_size > blocks->total_size)
         {
-            LOG("Out of memory. %zu(totalused_size)= %zu(blocks_t)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
-                totalused_size, sizeof(blocks_t), blocks->total_blocks, blocks->block_size, blocks->total_size);
+            LOG("Out of memory. %zu(totalused_size)= %zu(blocks_meta)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
+                totalused_size, sizeof(blocks_meta), blocks->total_blocks, blocks->block_size, blocks->total_size);
             return NULL;
         }
         else
@@ -70,7 +70,7 @@ block_t* blocks_alloc(blocks_t* blocks)
     return free_block;
 }
 
-void blocks_free(blocks_t *blocks,const uint64_t id)
+void blocks_free(blocks_meta *blocks,const uint64_t id)
 {
     LOG("block id %zu ->free", id);
     if (id >= blocks->total_blocks)
