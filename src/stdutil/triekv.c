@@ -16,17 +16,23 @@ typedef struct
     uint16_t index_size;
 } TrieKVMeta;
 
-void triekv_setmeta(const void *pool, const size_t pool_size, const size_t chartype, const size_t dataoffset_size, const size_t indexoffset_size)
+void triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t chartype, const uint8_t dataoffset_size, const uint8_t indexoffset_size)
 {
-    if (!pool || pool_size < sizeof(TrieKVMeta))
+    if (!pool)
+    {   
+        LOG("pool is NULL");
+        return;
+    }
+    if (pool_size < sizeof(TrieKVMeta))
     {
+        LOG("pool size %zu is too small for TrieKVMeta %zu", pool_size, sizeof(TrieKVMeta));
         return;
     }
     TrieKVMeta *meta = (TrieKVMeta *)pool;
-    meta->pool_size = (uint64_t)pool_size;
-    meta->char_type = (uint16_t)chartype;
-    meta->dataoffset_size = (uint8_t)dataoffset_size;
-    meta->indexoffset_size = (uint8_t)indexoffset_size;
+    meta->pool_size = pool_size;
+    meta->char_type = chartype;
+    meta->dataoffset_size =  dataoffset_size;
+    meta->indexoffset_size =  indexoffset_size;
 
     LOG("meta size: %zu", sizeof(TrieKVMeta));
 
@@ -44,7 +50,7 @@ void triekv_setmeta(const void *pool, const size_t pool_size, const size_t chart
     node childs[chartype]
 }
 */
-void triekv_set(const bytes_t pool, const bytes_t key, const bytes_t value)
+void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
 {
     if (!pool.data || !key.len <= 0)
         return;

@@ -14,9 +14,10 @@ typedef struct
     uint64_t total_blocks; // 总块数
     uint64_t used_blocks;  // 已使用的块数
     int64_t free_next_id; // 首个空闲块的id,if no free block, this is -1;
+    void *start; // 指向块内存起始位置
 } __attribute__((packed)) blocks_t;
 
-blocks_t *init_blocks(uint8_t *blocks_start, const uint64_t total_size, const uint64_t block_size);
+int init_blocks(void *block_start,const uint64_t total_size, const uint64_t block_size,blocks_t* blocks );
 
 typedef struct
 {
@@ -25,9 +26,8 @@ typedef struct
     int64_t free_next_id; // -1,or id;
 } __attribute__((packed)) block_t;
 
-block_t *block_ptr(blocks_t *blocks, uint64_t id);
-
-block_t blocks_alloc(blocks_t *blocks);
-void blocks_free(blocks_t *blocks, uint64_t id);
+block_t *block_ptr(const blocks_t* blocks,const uint64_t id);
+block_t* blocks_alloc(blocks_t* blocks);
+void blocks_free(blocks_t *blocks,const uint64_t id);
 
 #endif // __BLOCK_H__

@@ -7,9 +7,8 @@
 
 
 // 函数声明
-void triekv_setmeta(const void* pool,const size_t pool_size, const size_t chartype,const size_t dataoffset_size, const size_t indexoffset_size);
-
-void triekv_set(const bytes_t pool,const bytes_t key,const bytes_t value);
+void triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t chartype, const uint8_t dataoffset_size, const uint8_t indexoffset_size);
+void triekv_set(const bytes_t pool,const bytes_t key,const uint64_t valueptr);
 bytes_t triekv_get(const bytes_t pool,const bytes_t key);
 void triekv_del(const bytes_t pool,const bytes_t key);
 

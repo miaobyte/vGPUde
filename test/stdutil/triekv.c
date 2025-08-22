@@ -36,7 +36,7 @@ void test_set(bytes_t mem_pool) {
     bytes_t value=BYTES_LITERAL("example_value");
     
     // 设置键值对
-    triekv_set(mem_pool, mapped_key, value);
+    triekv_set(mem_pool, mapped_key, &value);
 }
 
 int main() {
