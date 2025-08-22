@@ -45,6 +45,6 @@ int main() {
     bytes_t pool = { .data = mem_pool, .len = POOL_SIZE };
 
     test_meta(pool);
-    //test_set(pool);
+    test_set(pool);
     return 0;
 }
