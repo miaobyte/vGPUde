@@ -28,6 +28,13 @@ block_t *block_ptr(const blocks_meta* blocks,const uint64_t id)
     void *ptr =blocks->start +(sizeof(block_t) + blocks->block_size) * id;
     return (block_t *)ptr;
 }
+void *block_data(const blocks_meta* blocks,const uint64_t id)
+{
+    void *ptr =block_ptr(blocks,id);
+    if(!ptr) return NULL;
+    ptr += sizeof(block_t);
+    return ptr;
+}
 
 block_t* blocks_alloc(blocks_meta* blocks)
 {

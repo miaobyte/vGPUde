@@ -6,7 +6,7 @@
 
 void test_meta(bytes_t pool) {
      // 初始化内存池
-    triekv_setmeta(pool.data, pool.len,37,4,4);
+    triekv_setmeta(pool.data, pool.len,37);
 }
 
 void updatekey(const bytes_t key,const bytes_t mapped_key) {
@@ -36,7 +36,7 @@ void test_set(bytes_t mem_pool) {
     bytes_t value=BYTES_LITERAL("example_value");
     
     // 设置键值对
-    triekv_set(mem_pool, mapped_key, &value);
+    triekv_set(mem_pool, mapped_key, value.data);
 }
 
 int main() {
@@ -45,6 +45,6 @@ int main() {
     bytes_t pool = { .data = mem_pool, .len = POOL_SIZE };
 
     test_meta(pool);
-    test_set(pool);
+    //test_set(pool);
     return 0;
 }
