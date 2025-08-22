@@ -7,13 +7,13 @@ blocks_t *init_blocks(uint8_t *blocks_start, const size_t total_size, const size
         LOG("Total size %zu is too small for blocks_t and block_t structures", total_size);
         return NULL;
     }
-    blocks_t *block = (blocks_t *)blocks_start;
-    block->total_size = total_size;
-    block->block_size = block_size;
-    block->total_blocks = 0;
-    block->used_blocks = 0;
-    block->free_next_id = -1; // 初始化为 -1，表示没有空闲块，需要新增分配
-    return block;
+    blocks_t *blocks = (blocks_t *)blocks_start;
+    blocks->total_size = total_size;
+    blocks->block_size = block_size;
+    blocks->total_blocks = 0;
+    blocks->used_blocks = 0;
+    blocks->free_next_id = -1; // 初始化为 -1，表示没有空闲块，需要新增分配
+    return blocks;
 }
 
 block_t *block_ptr(blocks_t *blocks, size_t id)
