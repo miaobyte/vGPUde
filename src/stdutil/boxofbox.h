@@ -17,13 +17,13 @@ typedef struct
 {
     uint8_t boxorobj; //>=1时，标识box_level
     uint64_t total_size;
-    uint8_t used[3]; //24个bit,只使用10个bit2
+    uint8_t used[4]; //32个bit,使用16个bit2
     // 0=box
     // 1=obj_start
     // 2=obj_continued
 
-    //l2 min=10-sizeof(objinbox),max=100-sizeof(boxofbox)
-    //l3 min=100-sizeof(boxofbox),max=100+100*100-sizeof(boxofbox)
+    //l2 min=16-sizeof(objinbox),max=256-sizeof(boxofbox)
+    //l3 min=256-sizeof(boxofbox),max=16^3-sizeof(boxofbox)
     uint64_t levelmax;//随着开始使用减少，需要同步到父节点的childmax
     uint64_t levelmin;//随着使用减少，需要同步到父节点的childmax
     uint64_t childmax;
