@@ -3,6 +3,7 @@ project(HAMi_vGPUde)
 
 set(CMAKE_C_STANDARD 11)
 
+set(CMAKE_BUILD_TYPE Debug)
 option(ENABLE_LOG "Enable logging" ON)
 
 

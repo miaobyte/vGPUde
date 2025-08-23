@@ -58,17 +58,39 @@ void* print_key(const bytes_t key) {
 void test_set(bytes_t mem_pool) {
     bytes_t key =BYTES_LITERAL("example_key");
     BYTES_BUFFER(mapped_key,key.len);
-
     key2embed(key, mapped_key); // 更新键的映射
-    bytes_t value=BYTES_LITERAL("example_value");
-    
-    // 设置键值对
     triekv_set(mem_pool, mapped_key, 1024);
 
-    
+    bytes_t key2 =BYTES_LITERAL("eabcdefg");
+    BYTES_BUFFER(mapped_key2,key2.len);
+    key2embed(key2, mapped_key2); // 更新键的映射
+    triekv_set(mem_pool, mapped_key2, 2048);
+
+
+    bytes_t value=BYTES_LITERAL("example_value");
 }
 
+void test_get(bytes_t mem_pool) {
+    bytes_t key =BYTES_LITERAL("example_key");
+    BYTES_BUFFER(mapped_key,key.len);
+    key2embed(key, mapped_key); // 更新键的映射
+    uint64_t value = triekv_get(mem_pool, mapped_key);
+    if (value != (uint64_t)-1) {
+        LOG("Key found with value: %lu", value);
+    } else {
+        LOG("Key not found");
+    }
 
+    bytes_t key2 =BYTES_LITERAL("eabcdefg");
+    BYTES_BUFFER(mapped_key2,key2.len);
+    key2embed(key2, mapped_key2); // 更新键的映射
+    uint64_t value2 = triekv_get(mem_pool, mapped_key2);
+    if (value2 != (uint64_t)-1) {
+        LOG("Key found with value: %lu", value2);
+    } else {
+        LOG("Key not found");
+    }
+}
 
 int main() {
     BYTES_BUFFER(pool, POOL_SIZE);
@@ -80,5 +102,6 @@ int main() {
     key2embed(prefix, mapped_prefix); // 更新前缀的映射
     triekv_keys(pool,mapped_prefix,print_key);
 
+    test_get(pool);
     return 0;
 }
