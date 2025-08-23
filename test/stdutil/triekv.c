@@ -65,9 +65,7 @@ void test_set(bytes_t mem_pool) {
     // 设置键值对
     triekv_set(mem_pool, mapped_key, 1024);
 
-    bytes_t prefix =BYTES_LITERAL("e");
-    BYTES_BUFFER(mapped_prefix,prefix.len);
-    triekv_keys(mem_pool,mapped_prefix,print_key);
+    
 }
 
 
@@ -76,5 +74,10 @@ int main() {
     BYTES_BUFFER(pool, POOL_SIZE);
     test_meta(pool);
     test_set(pool);
+
+    bytes_t prefix =BYTES_LITERAL("e");
+    BYTES_BUFFER(mapped_prefix,prefix.len);
+    triekv_keys(pool,mapped_prefix,print_key);
+
     return 0;
 }
