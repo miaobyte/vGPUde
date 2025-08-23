@@ -57,7 +57,7 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
     }
     if (pool_size < sizeof(TrieKVMeta))
     {
-        LOG("pool size %zu is too small for TrieKVMeta %zu", pool_size, sizeof(TrieKVMeta));
+        LOG("pool size %llu is too small for TrieKVMeta %zu", pool_size, sizeof(TrieKVMeta));
         return -1;
     }
     TrieKVMeta *meta = (TrieKVMeta *)pool;
@@ -81,6 +81,7 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
     }
     TrieKV_indexnode_init(meta, root_node); // 初始化根节点
     LOG("TrieKV root node initialized");
+    return 0;
 }
 
 void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
@@ -117,7 +118,7 @@ void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
     // 设置当前节点的hasobj_offset为value
     int64_t *hasobj_offset = (int64_t *)cur_node;
     if (*hasobj_offset < 0){
-        LOG("set at %zu", value);
+        LOG("set at %llu", value);
         *hasobj_offset = value; // 设置对象偏移
     }else{
         LOG("kv exists, updating value");
@@ -193,7 +194,6 @@ void triekv_keys(const bytes_t pool, const bytes_t prefix, BYTES_FUNC(*func)) {
 }
 
 bytes_t triekv_get(const bytes_t pool, const bytes_t key){
-
-
+    
 }
 void triekv_del(const bytes_t pool, const bytes_t key);

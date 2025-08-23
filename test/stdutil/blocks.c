@@ -10,7 +10,7 @@ void test_alloc(blocks_meta *blocks) {
     for (size_t i = 0; i < 62; i++) {
         block= blocks_alloc(blocks);
         assert(block->id != (size_t)-1);
-        printf("Allocated block id: %zu\n", block->id);
+        printf("Allocated block id: %llu\n", block->id);
     }
 }
 

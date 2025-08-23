@@ -50,8 +50,9 @@ void embed2key(const bytes_t mapped_key, const bytes_t original_key) {
     }
 }
 
-void print_key(const bytes_t key) {
+void* print_key(const bytes_t key) {
     LOG("Key: %.*s\n", (int)key.len, key.data);
+    return NULL;
 }
 
 void test_set(bytes_t mem_pool) {
@@ -62,7 +63,7 @@ void test_set(bytes_t mem_pool) {
     bytes_t value=BYTES_LITERAL("example_value");
     
     // 设置键值对
-    triekv_set(mem_pool, mapped_key, value.data);
+    triekv_set(mem_pool, mapped_key, 1024);
 
     bytes_t prefix =BYTES_LITERAL("e");
     BYTES_BUFFER(mapped_prefix,prefix.len);
@@ -72,10 +73,7 @@ void test_set(bytes_t mem_pool) {
 
 
 int main() {
-    
-    char mem_pool[POOL_SIZE];
-    bytes_t pool = { .data = mem_pool, .len = POOL_SIZE };
-
+    BYTES_BUFFER(pool, POOL_SIZE);
     test_meta(pool);
     test_set(pool);
     return 0;

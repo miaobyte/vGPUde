@@ -4,7 +4,7 @@ int init_blocks(void *block_start,const uint64_t total_size, const uint64_t bloc
 {
     if (total_size < sizeof(block_t))
     {
-        LOG("Total size %zu is too small for blocks_meta and block_t structures", total_size);
+        LOG("Total size %llu is too small for blocks_meta and block_t structures", total_size);
         return -1;
     }
     *blocks=(blocks_meta){
@@ -22,7 +22,7 @@ block_t *block_ptr(const blocks_meta* blocks,const uint64_t id)
 {
     if (id >= (blocks->total_blocks))
     {
-        LOG("block id %zu out of range", id);
+        LOG("block id %llu out of range", id);
         return NULL; // Return NULL for invalid id
     }
     void *ptr =blocks->start +(sizeof(block_t) + blocks->block_size) * id;
@@ -43,7 +43,7 @@ block_t* blocks_alloc(blocks_meta* blocks)
         uint64_t totalused_size = blocks->total_blocks * blocks->block_size;
         if (totalused_size + blocks->block_size > blocks->total_size)
         {
-            LOG("Out of memory. %zu(totalused_size)= %zu(blocks_meta)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
+            LOG("Out of memory. %llu(totalused_size)= %zu(blocks_meta)+ %llu(total_blocks)*%llu(block_size),when total_size %llu",
                 totalused_size, sizeof(blocks_meta), blocks->total_blocks, blocks->block_size, blocks->total_size);
             return NULL;
         }
@@ -56,10 +56,10 @@ block_t* blocks_alloc(blocks_meta* blocks)
             *block = (block_t){
                 .id = blocks->total_blocks - 1,
                 .used = 1,
-                .free_next_id = (uint64_t)-1,
+                .free_next_id = -1,
             };
 
-            LOG("append new block %zu,blocks usage: %zu / %zu",block->id, blocks->used_blocks, blocks->total_blocks);
+            LOG("append new block %llu,blocks usage: %llu / %llu",block->id, blocks->used_blocks, blocks->total_blocks);
             return block;
         }
     }
@@ -71,7 +71,7 @@ block_t* blocks_alloc(blocks_meta* blocks)
     free_block->used = 1;
     free_block->free_next_id =-1;
 
-    LOG("Reusing free block %zu, Used blocks: %zu/%zu",
+    LOG("Reusing free block %llu, Used blocks: %llu/%llu",
         free_id, blocks->used_blocks, blocks->total_blocks);
 
     return free_block;
@@ -79,17 +79,16 @@ block_t* blocks_alloc(blocks_meta* blocks)
 
 void blocks_free(blocks_meta *blocks,const uint64_t id)
 {
-    LOG("block id %zu ->free", id);
+    LOG("block id %llu ->free", id);
     if (id >= blocks->total_blocks)
     {
-        LOG("block id %zu out of range", id);
+        LOG("block id %llu out of range", id);
         return;
     }
     block_t *free_block = block_ptr(blocks, id);
     free_block->used = 0;
     // 空闲链表，追加到链表头
     free_block->free_next_id = blocks->free_next_id;
-    blocks->free_next_id = free_block->id;
-
+    blocks->free_next_id = (int64_t)free_block->id;
     blocks->used_blocks--;
 }
