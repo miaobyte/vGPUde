@@ -77,6 +77,7 @@ int main() {
 
     bytes_t prefix =BYTES_LITERAL("e");
     BYTES_BUFFER(mapped_prefix,prefix.len);
+    key2embed(prefix, mapped_prefix); // 更新前缀的映射
     triekv_keys(pool,mapped_prefix,print_key);
 
     return 0;

@@ -134,6 +134,7 @@ static void TrieKV_traverse_dfs(const TrieKVMeta *meta, const TrieKV_indexnode *
     if (*hasobj_offset >= 0) {
         key_buffer[depth] = '\0'; // 终止字符串
         bytes_t key = { .data = (uint8_t *)key_buffer, .len = depth };
+        LOG("Found key at depth %zu with offset %ld", depth, *hasobj_offset);
         func(key); // 调用回调函数
     }
 
