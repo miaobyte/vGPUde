@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "stdutil/triekv.h"
+#include "stdutil/logutil.h"
+#include "stdutil/block.h"
+
 
 #define POOL_SIZE (1 << 20) // 1MB内存池
 
@@ -9,7 +13,7 @@ void test_meta(bytes_t pool) {
     triekv_setmeta(pool.data, pool.len,37);
 }
 
-void updatekey(const bytes_t key,const bytes_t mapped_key) {
+void key2embed(const bytes_t key,const bytes_t mapped_key) {
     if (!key.data || !mapped_key.data) return;
 
     for (size_t i = 0; i < key.len; i++) {
@@ -27,17 +31,45 @@ void updatekey(const bytes_t key,const bytes_t mapped_key) {
         }
     }
 }
+void embed2key(const bytes_t mapped_key, const bytes_t original_key) {
+    if (!mapped_key.data || !original_key.data) return;
+
+    for (size_t i = 0; i < mapped_key.len; i++) {
+        uint8_t mapped_char = mapped_key.data[i];
+
+        // 逆向映射规则：0-25 -> a-z, 26-35 -> 0-9, 36 -> '_', 其他 -> '?'
+        if (mapped_char <= 25) {
+            original_key.data[i] = 'a' + mapped_char; // 映射回 a-z
+        } else if (mapped_char >= 26 && mapped_char <= 35) {
+            original_key.data[i] = '0' + (mapped_char - 26); // 映射回 0-9
+        } else if (mapped_char == 36) {
+            original_key.data[i] = '_'; // 映射回 '_'
+        } else {
+            original_key.data[i] = '?'; // 非法字符映射为 '?'
+        }
+    }
+}
+
+void print_key(const bytes_t key) {
+    LOG("Key: %.*s\n", (int)key.len, key.data);
+}
 
 void test_set(bytes_t mem_pool) {
     bytes_t key =BYTES_LITERAL("example_key");
     BYTES_BUFFER(mapped_key,key.len);
 
-    updatekey(key, mapped_key); // 更新键的映射
+    key2embed(key, mapped_key); // 更新键的映射
     bytes_t value=BYTES_LITERAL("example_value");
     
     // 设置键值对
     triekv_set(mem_pool, mapped_key, value.data);
+
+    bytes_t prefix =BYTES_LITERAL("e");
+    BYTES_BUFFER(mapped_prefix,prefix.len);
+    triekv_keys(mem_pool,mapped_prefix,print_key);
 }
+
+
 
 int main() {
     

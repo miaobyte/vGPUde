@@ -9,6 +9,7 @@
 int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t chartype);
 void triekv_set(const bytes_t pool,const bytes_t key,const uint64_t valueptr);
 bytes_t triekv_get(const bytes_t pool,const bytes_t key);
+void triekv_keys(const bytes_t pool,const bytes_t prefix,BYTES_FUNC(*func));
 void triekv_del(const bytes_t pool,const bytes_t key);
 
 #endif // TRIEKV_H

@@ -28,13 +28,13 @@ static int TrieKV_indexnode_init(const TrieKVMeta* meta,const TrieKV_indexnode* 
         LOG("TrieKV_indexnode_init node is NULL");
         return -1;
     }
-    int64_t* p=node;
+    int64_t* p=(int64_t*)node;
     *p=-1;// 初始化hasobj_offset为-1，表示没有对象
     p++;
     for (size_t i = 0; i < meta->char_type; i++) {
         p[i] = -1; // 初始化所有子节点
     }
-    return ;
+    return 0;
 }
 static size_t TrieKV_indexnode_size(const TrieKVMeta* meta)
 {
@@ -85,7 +85,7 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
 
 void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
 {
-    if (!pool.data || !key.len <= 0)
+    if (!pool.data || key.len <= 0)
         return;
 
     TrieKVMeta *meta = (TrieKVMeta *)pool.data;
@@ -124,5 +124,76 @@ void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
         *hasobj_offset = value; // 更新对象偏移
     }
 }
-bytes_t triekv_get(const bytes_t pool, const bytes_t key);
+
+static void TrieKV_traverse_dfs(const TrieKVMeta *meta, const TrieKV_indexnode *node, char *key_buffer, size_t depth, BYTES_FUNC(*func)) {
+    if (!node) return;
+
+    // 如果当前节点有值，调用回调函数处理键
+    int64_t *hasobj_offset = (int64_t *)node;
+    if (*hasobj_offset >= 0) {
+        key_buffer[depth] = '\0'; // 终止字符串
+        bytes_t key = { .data = (uint8_t *)key_buffer, .len = depth };
+        func(key); // 调用回调函数
+    }
+
+    // 遍历所有子节点
+    for (size_t i = 0; i < meta->char_type; i++) {
+        int64_t *child_id = TrieKV_indexnode_childblockid(meta, node, i);
+        if (child_id && *child_id >= 0) {
+            TrieKV_indexnode *child_node = block_data(&meta->blocks, *child_id);
+            key_buffer[depth] = (char)i; // 将当前字符加入键
+            TrieKV_traverse_dfs(meta, child_node, key_buffer, depth + 1, func);
+        }
+    }
+}
+
+void triekv_keys(const bytes_t pool, const bytes_t prefix, BYTES_FUNC(*func)) {
+    if (!pool.data || !func) {
+        LOG("Invalid arguments to triekv_keys");
+        return;
+    }
+
+    TrieKVMeta *meta = (TrieKVMeta *)pool.data;
+    TrieKV_indexnode *root_node = block_data(&meta->blocks, 0);
+    if (!root_node) {
+        LOG("Root node is NULL");
+        return;
+    }
+
+    char key_buffer[256]; // 假设最大键长度为 256
+    size_t depth = 0;
+
+    // 将前缀写入 key_buffer
+    if (prefix.data && prefix.len > 0) {
+        if (prefix.len >= sizeof(key_buffer)) {
+            LOG("Prefix is too long");
+            return;
+        }
+        memcpy(key_buffer, prefix.data, prefix.len);
+        depth = prefix.len;
+
+        // 遍历到前缀对应的节点
+        TrieKV_indexnode *cur_node = root_node;
+        for (size_t i = 0; i < prefix.len; i++) {
+            uint8_t char_index = prefix.data[i];
+            int64_t *child_id = TrieKV_indexnode_childblockid(meta, cur_node, char_index);
+            if (!child_id || *child_id < 0) {
+                LOG("Prefix not found");
+                return; // 前缀不存在
+            }
+            cur_node = block_data(&meta->blocks, *child_id);
+        }
+
+        // 从前缀节点开始递归遍历
+        TrieKV_traverse_dfs(meta, cur_node, key_buffer, depth, func);
+    } else {
+        // 如果没有前缀，从根节点开始遍历
+        TrieKV_traverse_dfs(meta, root_node, key_buffer, depth, func);
+    }
+}
+
+bytes_t triekv_get(const bytes_t pool, const bytes_t key){
+
+
+}
 void triekv_del(const bytes_t pool, const bytes_t key);

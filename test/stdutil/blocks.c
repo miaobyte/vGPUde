@@ -32,11 +32,38 @@ void test_free(blocks_meta *blocks) {
     blocks_alloc(blocks);
 }
 
-int main() {
+void help(){
+    printf("Usage: ./block_test <test_type>\n");
+    printf("  test_type:\n");
+    printf("    1 - Run test_alloc\n");
+    printf("    2 - Run test_free\n");
+}
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        help();
+        return 0;
+    }
+       
 
-    BYTES_BUFFER(pool,1024*4);
+    int test_type = atoi(argv[1]); // 将 argv[1] 转换为整数
+
+    BYTES_BUFFER(pool, 1024 * 4);
     blocks_meta blocks;
-    init_blocks(pool.data,pool.len, 64, &blocks);
-    // test_alloc((blocks_meta *)pool.data);
-    test_free(&blocks);
+    init_blocks(pool.data, pool.len, 64, &blocks);
+
+    switch (test_type) {
+        case 1:
+            printf("Running test_alloc...\n");
+            test_alloc(&blocks);
+            break;
+        case 2:
+            printf("Running test_free...\n");
+            test_free(&blocks);
+            break;
+        default:
+            help();
+            break;
+    }
+
+    return 0;
 }

@@ -17,4 +17,6 @@ typedef struct {
     uint8_t name##_buffer[length]; \
     bytes_t name = { .data = name##_buffer, .len = length }
 
+#define BYTES_FUNC(func_name) void func_name(const bytes_t key)
+
 #endif // __BTTES_H
