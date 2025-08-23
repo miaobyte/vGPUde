@@ -24,8 +24,9 @@ typedef struct
 
     //l2 min=10-sizeof(objinbox),max=100-sizeof(boxofbox)
     //l3 min=100-sizeof(boxofbox),max=100+100*100-sizeof(boxofbox)
-    uint64_t levelmax;
-    uint64_t levelmin;
+    uint64_t levelmax;//随着开始使用减少，需要同步到父节点的childmax
+    uint64_t levelmin;//随着使用减少，需要同步到父节点的childmax
+    uint64_t childmax;
     uint64_t childmin;
 } __attribute__((packed)) boxofbox;
 
