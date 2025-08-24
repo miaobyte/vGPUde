@@ -132,10 +132,8 @@ static void TrieKV_traverse_dfs(const TrieKVMeta *meta, const TrieKV_indexnode *
     // 如果当前节点有值，调用回调函数处理键
     int64_t *hasobj_offset = (int64_t *)node;
     if (*hasobj_offset >= 0) {
-        key_buffer[depth] = '\0'; // 终止字符串
-        bytes_t key = { .data = (uint8_t *)key_buffer, .len = depth };
-        LOG("Found key at depth %zu with offset %ld", depth, *hasobj_offset);
-        //func(key); 
+        bytes_t key = { .data = (uint8_t *)key_buffer, .len = depth};
+        func(key);
     }
 
     // 遍历所有子节点

@@ -50,8 +50,11 @@ void embed2key(const bytes_t mapped_key, const bytes_t original_key) {
     }
 }
 
-void* print_key(const bytes_t key) {
-    LOG("Key: %.*s\n", (int)key.len, key.data);
+void* print_key(const bytes_t mapped_key) {
+    BYTES_BUFFER(src_key,mapped_key.len+1);
+    embed2key(mapped_key, src_key);
+    src_key.data[mapped_key.len]='\0';
+    LOG("Key: %s", (char*)src_key.data);
     return NULL;
 }
 
@@ -74,25 +77,16 @@ void test_get(bytes_t mem_pool) {
     bytes_t key =BYTES_LITERAL("example_key");
     BYTES_BUFFER(mapped_key,key.len);
     key2embed(key, mapped_key); // 更新键的映射
-    uint64_t value = triekv_get(mem_pool, mapped_key);
-    if (value != (uint64_t)-1) {
-        LOG("Key found with value: %lu", value);
-    } else {
-        LOG("Key not found");
-    }
+
 
     bytes_t key2 =BYTES_LITERAL("eabcdefg");
     BYTES_BUFFER(mapped_key2,key2.len);
     key2embed(key2, mapped_key2); // 更新键的映射
-    uint64_t value2 = triekv_get(mem_pool, mapped_key2);
-    if (value2 != (uint64_t)-1) {
-        LOG("Key found with value: %lu", value2);
-    } else {
-        LOG("Key not found");
-    }
+
 }
 
 int main() {
+    LOG("Starting triekv test");
     BYTES_BUFFER(pool, POOL_SIZE);
     test_meta(pool);
     test_set(pool);
