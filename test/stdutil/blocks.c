@@ -20,7 +20,7 @@ void test_free(blocks_meta *blocks) {
     block_t* block = blocks_alloc(blocks);
     for(int i=0;i<10;i++){
          block=blocks_alloc(blocks);
-         LOG("alloc block %zu,used %d ,next.freeid %zu",block.id,block.used,block.free_next_id);
+         LOG("alloc block %zu,used %d ,next.freeid %zu",block->id,block->used,block->free_next_id);
     }
     blocks_free(blocks,9);
     blocks_alloc(blocks);
