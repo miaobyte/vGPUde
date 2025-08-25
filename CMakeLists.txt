@@ -15,8 +15,6 @@ add_library(stdutil SHARED
 ${stdutil_SOURCES}
 )
 
-set(NODE_INT int32_t) # 根据需要设置节点id的整数类型
-add_compile_definitions(NODE_INT=${NODE_INT})
 
 # 如果 ENABLE_LOG 被设置为 ON，则定义 ENABLE_LOG 宏
 if(ENABLE_LOG)

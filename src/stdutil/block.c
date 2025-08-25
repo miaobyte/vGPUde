@@ -56,7 +56,7 @@ block_t* blocks_alloc(blocks_meta* blocks)
             *block = (block_t){
                 .id = blocks->total_blocks - 1,
                 .used = 1,
-                .free_next_id = (uint64_t)-1,
+                .free_next_id = -1,
             };
 
             LOG("append new block %zu,blocks usage: %zu / %zu",block->id, blocks->used_blocks, blocks->total_blocks);
