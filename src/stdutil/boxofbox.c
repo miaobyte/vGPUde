@@ -22,9 +22,7 @@ void boxofbox_init(box_meta *meta, size_t control_size, void *boxstart)
     }
     // 初始化根节点为空闲状态
     box_t *root = (box_t *)boxstart;
-    *root = (box_t){
-        . = 0,//0 biaoshi kongxian
-    };
+ 
 
 }
 
@@ -35,7 +33,5 @@ static box_t*  box_alloc(box_meta *meta,box_t* node, size_t size){
     }
 
 }
-box* boxofbox_alloc(box_meta *meta, size_t size){
-    
-}
+ 
 void boxofbox_free(box_meta *meta, void *ptr);
