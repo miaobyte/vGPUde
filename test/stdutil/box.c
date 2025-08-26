@@ -1,19 +1,18 @@
-#include <stdio.h>
+#include <stdint.h>
+
+#include "stdutil/box.h"
+
+
+
+void test_boxinit(void* ptr, void* data){
+    box_init(ptr,1024*1024, data,1024*1024*16);
+}
  
-
-void test(){
-    
-}
-void help(){
-    printf("Usage: ./block_test <test_type>\n");
-
-}
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        help();
-        return 0;
-    }
-       
 
-    int test_type = atoi(argv[1]); // 将 argv[1] 转换为整数
+    uint8_t buddy[1024*1024];
+
+    uint8_t data[1024*1024*16];
+    test_boxinit(buddy, data);
+    return 0;
 }

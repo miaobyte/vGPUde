@@ -20,13 +20,13 @@ uint32_t int_log(uint64_t n, uint32_t base) {
 AlignedSize align_to(uint64_t n, uint32_t base) {
     if(n<0 ) {
         // Invalid input, return zeroed structure
-        LOG("Invalid arg n ", n);
+        LOG("Invalid num %zu", n);
         AlignedSize result = {0, 0, 0, 0};
         return result;
     }
     if(base<1) {
         // Invalid input, return zeroed structure
-        LOG("Invalid arg base ", base);
+        LOG("Invalid arg base %u", base);
         AlignedSize result = {0, 0, 0, 0};
         return result;
     }

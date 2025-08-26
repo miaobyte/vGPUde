@@ -76,7 +76,7 @@ void test_input() {
     // 打印结果
     printf("Input: %d\n", input);
     printf("Base: %d\n", result.base);
-    printf("Aligned Value: %llu\n", result.aligned_value*8);
+    printf("Aligned Value: %zu\n", result.aligned_value*8);
     printf("Power: %d\n", result.power);
     printf("Multiple: %d\n", result.multiple);
 }

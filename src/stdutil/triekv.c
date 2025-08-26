@@ -18,40 +18,28 @@ typedef struct
     blocks_meta blocks;
 } __attribute__((packed)) TrieKVMeta;
 
-typedef struct
-{
-    int64_t hasobj_offset; // 该节点是否有对象，<0表示没有，>0表示偏移
-    // int64_t childs[char_type]; // 存储子节点的blockid,<0表示没有子节点
-} __attribute__((packed)) TrieKV_indexnode;
+ 
+// int64_t hasobj_offset; // 该节点是否有对象，<0表示没有，>0表示偏移
+// int64_t childs[char_type]; // 存储子节点的blockid,<0表示没有子节点
 
-static int TrieKV_indexnode_init(const TrieKVMeta *meta, const TrieKV_indexnode *node)
+
+static int TrieKV_indexnode_init(const TrieKVMeta *meta,int64_t *node)
 {
     if (!node)
     {
         LOG("TrieKV_indexnode_init node is NULL");
         return -1;
     }
-    int64_t *p = (int64_t *)node;
-    *p = -1; // 初始化hasobj_offset为-1，表示没有对象
-    p++;
-    for (size_t i = 0; i < meta->char_type; i++)
+    int64_t *p = node;
+    for (size_t i = 0; i < meta->char_type+1; i++)
     {
-        p[i] = -1; // 初始化所有子节点
+        p[i] = -1; // 初始化所有子节点=-1
     }
     return 0;
 }
 static size_t TrieKV_indexnode_size(const TrieKVMeta *meta)
 {
-    return sizeof(TrieKV_indexnode) + meta->char_type * sizeof(int64_t);
-}
-static int64_t *TrieKV_indexnode_childblockid(const TrieKVMeta *meta, const TrieKV_indexnode *node, int8_t i)
-{
-    if (i >= meta->char_type)
-    {
-        LOG("TrieKV_indexnode_childblockid,Index %u out of range", i);
-        return NULL;
-    }
-    return (int64_t *)node + 1 + i;
+    return (1 + meta->char_type) * sizeof(int64_t);
 }
 
 int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t chartype)
@@ -80,7 +68,7 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
 
     // rootnode
     blocks_alloc(&meta->blocks); // 分配根节点
-    TrieKV_indexnode *root_node = block_data(&meta->blocks, 0);
+    void *root_node = block_data(&meta->blocks, 0);
     if (!root_node)
     {
         LOG("Failed to allocate root node");
@@ -97,14 +85,14 @@ void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
         return;
 
     TrieKVMeta *meta = (TrieKVMeta *)pool.data;
-    TrieKV_indexnode *root_node = block_data(&meta->blocks, 0);
-    TrieKV_indexnode *cur_node = root_node;
+    int64_t *root_node = block_data(&meta->blocks, 0);
+    int64_t *cur_node = root_node;
 
     for (size_t i = 0; i < key.len; i++)
     {
         // 当前字符的索引
         uint8_t char_index = *(key.data + i);
-        int64_t *childi = TrieKV_indexnode_childblockid(meta, cur_node, char_index);
+        int64_t *childi = cur_node + 1 + char_index;
         if (*childi < 0)
         {
             // 如果没有子节点，分配一个新的节点
@@ -137,14 +125,13 @@ void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
     }
 }
 
-static void TrieKV_traverse_dfs(const TrieKVMeta *meta, const TrieKV_indexnode *node, char *key_buffer, size_t depth, BYTES_FUNC(*func))
+static void TrieKV_traverse_dfs(const TrieKVMeta *meta,int64_t *node, char *key_buffer, size_t depth, BYTES_FUNC(*func))
 {
     if (!node)
         return;
 
     // 如果当前节点有值，调用回调函数处理键
-    int64_t *hasobj_offset = (int64_t *)node;
-    if (*hasobj_offset >= 0)
+    if (*node >= 0)
     {
         bytes_t key = {.data = (uint8_t *)key_buffer, .len = depth};
         func(key);
@@ -153,10 +140,10 @@ static void TrieKV_traverse_dfs(const TrieKVMeta *meta, const TrieKV_indexnode *
     // 遍历所有子节点
     for (size_t i = 0; i < meta->char_type; i++)
     {
-        int64_t *child_id = TrieKV_indexnode_childblockid(meta, node, i);
+        int64_t *child_id =  node + 1 + i;
         if (child_id && *child_id >= 0)
         {
-            TrieKV_indexnode *child_node = block_data(&meta->blocks, *child_id);
+            int64_t *child_node = block_data(&meta->blocks, *child_id);
             key_buffer[depth] = (char)i; // 将当前字符加入键
             TrieKV_traverse_dfs(meta, child_node, key_buffer, depth + 1, func);
         }
@@ -172,7 +159,7 @@ void triekv_keys(const bytes_t pool, const bytes_t prefix, BYTES_FUNC(*func))
     }
 
     TrieKVMeta *meta = (TrieKVMeta *)pool.data;
-    TrieKV_indexnode *root_node = block_data(&meta->blocks, 0);
+    int64_t *root_node = block_data(&meta->blocks, 0);
     if (!root_node)
     {
         LOG("Root node is NULL");
@@ -194,11 +181,11 @@ void triekv_keys(const bytes_t pool, const bytes_t prefix, BYTES_FUNC(*func))
         depth = prefix.len;
 
         // 遍历到前缀对应的节点
-        TrieKV_indexnode *cur_node = root_node;
+        int64_t *cur_node = root_node;
         for (size_t i = 0; i < prefix.len; i++)
         {
             uint8_t char_index = prefix.data[i];
-            int64_t *child_id = TrieKV_indexnode_childblockid(meta, cur_node, char_index);
+            int64_t *child_id = cur_node + 1 + char_index;
             if (!child_id || *child_id < 0)
             {
                 LOG("Prefix not found");
