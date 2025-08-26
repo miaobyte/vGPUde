@@ -35,7 +35,10 @@ void *block_data(const blocks_meta* blocks,const uint64_t id)
     ptr += sizeof(block_t);
     return ptr;
 }
-
+block_t *block_by_data(const void* blockdata){
+    void *ptr=(void*)blockdata - sizeof(block_t);
+    return (block_t *)ptr;
+}
 block_t* blocks_alloc(blocks_meta* blocks)
 {
     if (blocks->free_next_id == -1)

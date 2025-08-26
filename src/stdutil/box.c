@@ -33,7 +33,7 @@ typedef struct
 
 typedef struct
 {
-    int32_t childs_blockid[16];          // 存储子节点的blockid,<0表示没有子节点
+    int32_t childs_blockid[16];   // 存储子节点的blockid,<0表示没有子节点
     box_child used_slots[16];     // 直接存储子节点的状态
     int8_t childbox_obj_levelmin; // 子节点中最小的obj_level
     int8_t childbox_obj_levelmax; // 子节点中最大的obj_level
@@ -94,15 +94,15 @@ int box_init(void *metaptr, size_t buddysize, void *boxstart, size_t box_size)
     return 0;
 }
 
-static void box_format(box_head *node)
+static void box_format(box_head *node, box_head *parent)
 {
     node->state = BOX_FORMATTED;
-    for (int i = 0; i <  16; i++)
+    node->level = parent->level - 1;
+    node->avliable_slot = 16;
+    node->parent = block_by_data(parent)->id;
+    for (int i = 0; i < 16; i++)
     {
         node->body.used_box_body.childs_blockid[i] = -1;
-    }
-    for (int i = 0; i < node->avliable_slot; i++)
-    {
         node->body.used_box_body.used_slots[i].state = BOX_UNUSED;
         node->body.used_box_body.used_slots[i].continue_max = 16;
     }
@@ -112,7 +112,7 @@ static void box_format(box_head *node)
     node->body.used_box_body.child_continued_max = 16;   // 一般只有顶层node才可能会不完整
 }
 
-static uint64_t box_find_alloc(box_meta *meta, box_head *node, AlignedSize objsize)
+static uint64_t box_find_alloc(box_meta *meta, box_head *node, box_head *parent, AlignedSize objsize)
 {
     if (node->state == BOX_UNUSED)
     {
@@ -127,7 +127,7 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, AlignedSize objsi
             return 0; // 偏移量=0
         }
         // 分裂节点
-        box_format(node);
+        box_format(node, parent);
     }
 
     if (node->state == BOX_FORMATTED)
@@ -137,24 +137,42 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, AlignedSize objsi
             // 目标体量 属于当前level
             return 0; // 偏移量=0
         }
-        else
+        else if (objsize.power + 1 < node->level)
         {
-            //目标体量<当前level,查找子节点
-             for (int i = 0; i < node->avliable_slot; i++)
+            // 目标体量<当前level,查找子节点
+            for (int i = 0; i < node->avliable_slot; i++)
             {
-                if (node->body.used_box_body.used_slots[i].state ==BOX_UNUSED){
+                if (node->body.used_box_body.used_slots[i].state == BOX_UNUSED)
+                {
                     // 该子节点未被使用，可以分配
-                    if(node->body.used_box_body.childs_blockid[i]<0){
-                        block_t* block = blocks_alloc(&(meta->blocks));
-                        node->body.used_box_body.childs_blockid[i] = block->id;   
+                    if (node->body.used_box_body.childs_blockid[i] < 0)
+                    {
+                        block_t *block = blocks_alloc(&(meta->blocks));
+                        node->body.used_box_body.childs_blockid[i] = block->id;
                     }
-                    box_head* childnode = block_data(&(meta->blocks), node->body.used_box_body.childs_blockid[i]);
-                    return box_find_alloc(meta, childnode, objsize);
+                    box_head *childnode = block_data(&(meta->blocks), node->body.used_box_body.childs_blockid[i]);
+                    return box_find_alloc(meta, childnode, node, objsize);
                 }
                 if (node->body.used_box_body.used_slots[i].state == BOX_FORMATTED)
                 {
                     // 该子节点已经被格式化，判断size范围是否合适
-                    
+                    if (objsize.power + 2 == node->level)
+                    {
+                        if (objsize.multiple <= node->body.used_box_body.used_slots[i].continue_max)
+                        {
+                            box_head *childnode = block_data(&(meta->blocks), node->body.used_box_body.childs_blockid[i]);
+                            return box_find_alloc(meta, childnode, node, objsize);
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        box_head *childnode = block_data(&(meta->blocks), node->body.used_box_body.childs_blockid[i]);
+                        return box_find_alloc(meta, childnode, node, objsize);
+                    }
                 }
             }
         }
@@ -182,6 +200,6 @@ void *box_alloc(void *metaptr, size_t size)
         LOG("Error: Requested size %zu is too large for the box system", size);
         return NULL;
     }
-    return meta->rootbox + box_find_alloc(meta, root, aligned_size);
+    return meta->rootbox + box_find_alloc(meta, root, NULL, aligned_size);
 }
 void box_free(void *meta, void *ptr);

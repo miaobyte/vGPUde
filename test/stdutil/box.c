@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     uint8_t *data = malloc(1024*1024*16);
     test_boxinit(buddy, data);
 
-    box_alloc(buddy,5);
+    void* p5=box_alloc(buddy,5);
     free(buddy);
     free(data);
     return 0;

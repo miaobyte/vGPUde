@@ -28,6 +28,7 @@ typedef struct
 
 block_t *block_ptr(const blocks_meta* blocks,const uint64_t id);
 void *block_data(const blocks_meta* blocks,const uint64_t id);
+block_t *block_by_data(const void* blockdata);
 block_t* blocks_alloc(blocks_meta* blocks);
 void blocks_free(blocks_meta *blocks,const uint64_t id);
 
