@@ -8,7 +8,7 @@ typedef struct
 {
     uint64_t buddysize; // 伙伴系统的总size
     void *rootbox;      // 指向块内存起始位置
-    uint64_t box_size;  // 总内存大小，不可变，内存长度必须=16^n*x,n=[1~]，x=[1,15]
+    uint64_t box_size;  // 总内存大小，不可变，内存长度必须=16^n*x,n>=1，x=[1,15]
 
     blocks_meta blocks;
 } __attribute__((packed)) box_meta;
@@ -33,7 +33,7 @@ typedef struct
 
 typedef struct
 {
-    int32_t slotsid[16];          // 存储子节点的blockid,<0表示没有子节点
+    int32_t childs_blockid[16];          // 存储子节点的blockid,<0表示没有子节点
     box_child used_slots[16];     // 直接存储子节点的状态
     int8_t childbox_obj_levelmin; // 子节点中最小的obj_level
     int8_t childbox_obj_levelmax; // 子节点中最大的obj_level
@@ -57,7 +57,7 @@ typedef struct
 
 } __attribute__((packed)) box_head; //
 
-int box_init(void *metaptr,size_t buddysize, void *boxstart, size_t box_size)
+int box_init(void *metaptr, size_t buddysize, void *boxstart, size_t box_size)
 {
     if (box_size % 8 != 0)
     {
@@ -76,7 +76,7 @@ int box_init(void *metaptr,size_t buddysize, void *boxstart, size_t box_size)
         .rootbox = boxstart,
         .box_size = box_size,
     };
-    void *block_start = (void *)meta + sizeof(box_meta);
+    void *block_start = metaptr + sizeof(box_meta);
     init_blocks(block_start, buddysize - sizeof(box_meta), sizeof(box_head), &meta->blocks);
     blocks_alloc(&meta->blocks); // 分配根节点
     box_head *root_boxhead = block_data(&meta->blocks, 0);
@@ -94,6 +94,24 @@ int box_init(void *metaptr,size_t buddysize, void *boxstart, size_t box_size)
     return 0;
 }
 
+static void box_format(box_head *node)
+{
+    node->state = BOX_FORMATTED;
+    for (int i = 0; i <  16; i++)
+    {
+        node->body.used_box_body.childs_blockid[i] = -1;
+    }
+    for (int i = 0; i < node->avliable_slot; i++)
+    {
+        node->body.used_box_body.used_slots[i].state = BOX_UNUSED;
+        node->body.used_box_body.used_slots[i].continue_max = 16;
+    }
+    node->body.used_box_body.level_continued_max = node->avliable_slot;
+    node->body.used_box_body.childbox_obj_levelmin = -1; // 初始没有子节点
+    node->body.used_box_body.childbox_obj_levelmax = -1; // 初始没有子节点
+    node->body.used_box_body.child_continued_max = 16;   // 一般只有顶层node才可能会不完整
+}
+
 static uint64_t box_find_alloc(box_meta *meta, box_head *node, AlignedSize objsize)
 {
     if (node->state == BOX_UNUSED)
@@ -109,29 +127,36 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, AlignedSize objsi
             return 0; // 偏移量=0
         }
         // 分裂节点
-        node->state = BOX_FORMATTED;
-        for (int i = 0; i < node->avliable_slot; i++)
-        {
-            node->body.used_box_body.slotsid[i] = -1; // 初始没有子节点,初始化后如果为-1，说明该区域内存不可用
-            node->body.used_box_body.used_slots[i].state = BOX_UNUSED;
-            node->body.used_box_body.used_slots[i].continue_max = 16;
-        }
-        node->body.used_box_body.level_continued_max = node->avliable_slot;
-        node->body.used_box_body.childbox_obj_levelmin = -1; // 初始没有子节点
-        node->body.used_box_body.childbox_obj_levelmax = -1;
-        node->body.used_box_body.child_continued_max = 16;
-    };
+        box_format(node);
+    }
 
     if (node->state == BOX_FORMATTED)
     {
         if (objsize.power + 1 == node->level)
         {
             // 目标体量 属于当前level
-
             return 0; // 偏移量=0
         }
         else
         {
+            //目标体量<当前level,查找子节点
+             for (int i = 0; i < node->avliable_slot; i++)
+            {
+                if (node->body.used_box_body.used_slots[i].state ==BOX_UNUSED){
+                    // 该子节点未被使用，可以分配
+                    if(node->body.used_box_body.childs_blockid[i]<0){
+                        block_t* block = blocks_alloc(&(meta->blocks));
+                        node->body.used_box_body.childs_blockid[i] = block->id;   
+                    }
+                    box_head* childnode = block_data(&(meta->blocks), node->body.used_box_body.childs_blockid[i]);
+                    return box_find_alloc(meta, childnode, objsize);
+                }
+                if (node->body.used_box_body.used_slots[i].state == BOX_FORMATTED)
+                {
+                    // 该子节点已经被格式化，判断size范围是否合适
+                    
+                }
+            }
         }
     }
 }
