@@ -60,7 +60,29 @@ void test_align_to() {
     printf("All tests passed!\n");
 }
 
+#include <stdio.h>
+#include <stdlib.h>
+void test_input() {
+    int input;
+    printf("Enter an integer value: ");
+    if (scanf("%d", &input) != 1) {
+        printf("Invalid input. Please enter an integer.\n");
+        return;
+    }
+
+    // 调用 align_to 函数
+    AlignedSize result = align_to(input/8, 16);
+
+    // 打印结果
+    printf("Input: %d\n", input);
+    printf("Base: %d\n", result.base);
+    printf("Aligned Value: %llu\n", result.aligned_value*8);
+    printf("Power: %d\n", result.power);
+    printf("Multiple: %d\n", result.multiple);
+}
 int main() {
     test_align_to();
+
+    test_input();
     return 0;
 }
