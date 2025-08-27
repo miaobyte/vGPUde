@@ -435,4 +435,60 @@ void *box_alloc(void *metaptr, size_t size)
 
     return meta->rootbox + offset;
 }
-void box_free(void *meta, void *ptr);
+void box_free(void *metaptr, void *ptr) {
+    box_meta *meta = metaptr;
+
+    // 计算偏移量
+    uint64_t offset = ((uint8_t *)ptr - (uint8_t *)meta->rootbox) / 8;
+
+    // 获取根节点
+    box_head *node = block_data(&meta->blocks, 0);
+    if (!node) {
+        LOG("Error: Root node is NULL");
+        return;
+    }
+
+    // 遍历找到目标节点
+    bool found = false;
+    uint8_t slot_index = 0;
+    while (!found) {
+        slot_index = offset % 16; // 当前节点的槽位索引
+        offset /= 16;                     // 计算父节点的偏移量
+
+        if (node->used_slots[slot_index].state == OBJ_START) {
+            found=true;
+            return;
+        } else if (node->used_slots[slot_index].state == BOX_FORMATTED) {
+            // 如果槽位是子节点，继续向下查找
+            node = block_data(&meta->blocks, node->childs_blockid[slot_index]);
+            if (!node) {
+                LOG("Error: Child node is NULL");
+                return;
+            }
+        } else {
+            LOG("Error: Invalid state encountered during free");
+            return;
+        }
+    }
+
+    // 释放槽位
+    node->used_slots[slot_index].state = BOX_UNUSED;
+    node->used_slots[slot_index].continue_max = 16;
+    for (int i = slot_index+1; i < node->avliable_slot; i++) {
+        if (node->used_slots[i].state == OBJ_CONTINUED) {
+            node->used_slots[i].state = BOX_UNUSED;
+            node->used_slots[i].continue_max = 16;
+        } else {
+            break;
+        }
+    }
+
+    // 更新连续最大空闲槽位计数
+    uint8_t new_max = box_continuous_max(node);
+    if (node->max_obj_capacity != new_max) {
+
+        update_parent(meta, node);
+    }
+
+    LOG("Object successfully freed");
+}

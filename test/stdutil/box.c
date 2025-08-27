@@ -18,6 +18,10 @@ int main(int argc, char *argv[]) {
 
     void* p5=box_alloc(buddy,5);
     void* p7=box_alloc(buddy,7);
+
+    box_free(buddy,p5);
+    box_free(buddy,p7);
+
     free(buddy);
     free(data);
     return 0;
