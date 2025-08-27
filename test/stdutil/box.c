@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
     test_boxinit(buddy, data);
 
     void* p5=box_alloc(buddy,5);
+    void* p7=box_alloc(buddy,7);
     free(buddy);
     free(data);
     return 0;

@@ -9,12 +9,9 @@ target_link_libraries(test_block stdutil)
 add_executable(test_box box.c)
 target_link_libraries(test_box stdutil)
 
-add_executable(test_aligned aligned.c)
-target_link_libraries(test_aligned stdutil)
-
+ 
 if(ENABLE_LOG)
     target_compile_definitions(test_block PRIVATE ENABLE_LOG)
     target_compile_definitions(test_triekv PRIVATE ENABLE_LOG)
     target_compile_definitions(test_box PRIVATE ENABLE_LOG)
-    target_compile_definitions(test_aligned PRIVATE ENABLE_LOG)
 endif()
