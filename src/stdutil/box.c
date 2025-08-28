@@ -3,7 +3,6 @@
 #include "stdutil/box.h"
 #include "stdutil/block.h"
 #include "stdutil/logutil.h"
-#include "stdutil/block.h"
 
 typedef struct
 {
@@ -114,7 +113,7 @@ typedef struct
 
 } __attribute__((packed)) box_head; //
 
-static void box_format(box_meta *meta,box_head *node, uint8_t objlevel, uint8_t avliable_slot, int32_t parent_id);
+static void box_format(box_meta *meta, box_head *node, uint8_t objlevel, uint8_t avliable_slot, int32_t parent_id);
 
 int box_init(void *metaptr, size_t buddysize, void *boxstart, size_t box_size)
 {
@@ -186,7 +185,6 @@ static void box_format(box_meta *meta, box_head *node, uint8_t objlevel, uint8_t
         };
     }
 
-
     // childbox
     for (int i = 0; i < 16; i++)
     {
@@ -208,8 +206,8 @@ static obj_usage box_max_obj_capacity(box_head *node)
             };
         }
         return (obj_usage){
-            .level = node->objlevel ,
-            .multiple =node->max_obj_capacity,
+            .level = node->objlevel,
+            .multiple = node->max_obj_capacity,
         };
     }
     else
@@ -218,51 +216,66 @@ static obj_usage box_max_obj_capacity(box_head *node)
     }
 }
 
-
- 
-static void update_parent(box_meta *meta, box_head *node)
+static void update_parent(box_meta *meta, box_head *node, bool slotstate_changed, bool slot_mac_obj_capacity_changed)
 {
-    if (node->max_obj_capacity > 0)
+    if (slotstate_changed)
     {
-        // 当前节点还有空闲槽，无需更新parent
-        return;
-    }
-    obj_usage newmax = {
-        .level = 0,
-        .multiple = 0};
-
-    box_head *child = NULL;
-    for (int i = 0; i < node->avliable_slot; i++)
-    {
-        if (node->used_slots[i].state == BOX_UNUSED)
+        u_int8_t newcontinuous_max = box_continuous_max(node);
+        if (node->max_obj_capacity != newcontinuous_max)
         {
-            // 不应该
-            LOG("Error: should not happen!");
-            return;
+            node->max_obj_capacity = newcontinuous_max;
         }
-        if (node->used_slots[i].state == BOX_FORMATTED)
+        else
         {
-            child = block_data(&meta->blocks, node->childs_blockid[i]);
-            if (!child)
+            slotstate_changed = false;
+        }
+    }
+    if (slot_mac_obj_capacity_changed)
+    {
+        if (node->max_obj_capacity > 0)
+        {
+            // 当前节点还有空闲槽，child_max_obj_capacity不变
+            slot_mac_obj_capacity_changed = false;
+        }
+        else
+        {
+            obj_usage newmax = {
+                .level = 0,
+                .multiple = 0};
+
+            box_head *child = NULL;
+            for (int i = 0; i < node->avliable_slot; i++)
             {
-                LOG("Error: Child node should not be NULL");
-                return;
+                if (node->used_slots[i].state == BOX_FORMATTED)
+                {
+                    child = block_data(&meta->blocks, node->childs_blockid[i]);
+                    if (!child)
+                    {
+                        LOG("Error: Child node should not be NULL");
+                        return;
+                    }
+                    obj_usage childmax = box_max_obj_capacity(child);
+                    if (compare_obj_usage(childmax, newmax) > 0)
+                        newmax = childmax;
+                }
             }
-            obj_usage childmax = box_max_obj_capacity(child);
-            if (compare_obj_usage(childmax, newmax) > 0)
-                newmax = childmax;
+            int8_t child_max_obj_capacity_changed=compare_obj_usage( newmax,node->child_max_obj_capacity);
+            if (child_max_obj_capacity_changed!=0)
+            {   
+                // 发生变化
+                node->child_max_obj_capacity = newmax;
+            }else{
+                slot_mac_obj_capacity_changed=false;
+            }
         }
     }
-
-    if (compare_obj_usage(node->child_max_obj_capacity, newmax) != 0)
+    if (slotstate_changed || slot_mac_obj_capacity_changed)
     {
-        node->child_max_obj_capacity = newmax;
-    }
-    else
-    {
-        // 继续更新parent
-        box_head *parent = block_data(&meta->blocks, node->parent);
-        return update_parent(meta, parent);
+        if (node->parent >= 0)
+        {
+            box_head *parent = block_data(&meta->blocks, node->parent);
+            update_parent(meta, parent, slotstate_changed, slot_mac_obj_capacity_changed);
+        }
     }
 }
 
@@ -319,17 +332,13 @@ static uint8_t put_slots(box_meta *meta, box_head *node, obj_usage objsize)
 
     uint8_t continuous_max = box_continuous_max(node);
 
-    if (node->max_obj_capacity == continuous_max)
+    if (node->max_obj_capacity != continuous_max)
     {
-        return target_slot;
-        // 没有变化，无需通知parent
+        // 发生变化，递归更新parent的child
+        node->max_obj_capacity = continuous_max;
+        box_head *parent = block_data(&meta->blocks, node->parent);
+        update_parent(meta, parent, false, true);
     }
-
-    // 发生变化，递归更新parent的child
-    node->max_obj_capacity = continuous_max;
-    box_head *parent = block_data(&meta->blocks, node->parent);
-    update_parent(meta, parent);
-
     return target_slot;
 }
 
@@ -370,14 +379,14 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, box_head *parent,
                 {
                     // 需要分配出来
                     block_t *child_block = blocks_alloc(&(meta->blocks));
-                    node->childs_blockid[i]=child_block->id;
+                    node->childs_blockid[i] = child_block->id;
                     child = block_data(&meta->blocks, child_block->id);
                     block_t *cur_block = block_by_data(node);
                     box_format(meta, child, node->objlevel - 1, 16, cur_block->id);
-                    
-                    //更新node中的child信息
+
+                    // 更新node中的child信息
                     node->used_slots[i].state = BOX_FORMATTED;
-                     //更新node中的max_obj_capacity
+                    // 更新node中的max_obj_capacity
                     uint8_t new_max = box_continuous_max(node);
                     if (node->max_obj_capacity != new_max)
                     {
@@ -435,7 +444,8 @@ void *box_alloc(void *metaptr, size_t size)
 
     return meta->rootbox + offset;
 }
-void box_free(void *metaptr, void *ptr) {
+void box_free(void *metaptr, void *ptr)
+{
     box_meta *meta = metaptr;
 
     // 计算偏移量
@@ -443,7 +453,8 @@ void box_free(void *metaptr, void *ptr) {
 
     // 获取根节点
     box_head *node = block_data(&meta->blocks, 0);
-    if (!node) {
+    if (!node)
+    {
         LOG("Error: Root node is NULL");
         return;
     }
@@ -451,21 +462,28 @@ void box_free(void *metaptr, void *ptr) {
     // 遍历找到目标节点
     bool found = false;
     uint8_t slot_index = 0;
-    while (!found) {
+    while (!found)
+    {
         slot_index = offset % 16; // 当前节点的槽位索引
-        offset /= 16;                     // 计算父节点的偏移量
+        offset /= 16;             // 计算父节点的偏移量
 
-        if (node->used_slots[slot_index].state == OBJ_START) {
-            found=true;
+        if (node->used_slots[slot_index].state == OBJ_START)
+        {
+            found = true;
             return;
-        } else if (node->used_slots[slot_index].state == BOX_FORMATTED) {
+        }
+        else if (node->used_slots[slot_index].state == BOX_FORMATTED)
+        {
             // 如果槽位是子节点，继续向下查找
             node = block_data(&meta->blocks, node->childs_blockid[slot_index]);
-            if (!node) {
+            if (!node)
+            {
                 LOG("Error: Child node is NULL");
                 return;
             }
-        } else {
+        }
+        else
+        {
             LOG("Error: Invalid state encountered during free");
             return;
         }
@@ -474,20 +492,28 @@ void box_free(void *metaptr, void *ptr) {
     // 释放槽位
     node->used_slots[slot_index].state = BOX_UNUSED;
     node->used_slots[slot_index].continue_max = 16;
-    for (int i = slot_index+1; i < node->avliable_slot; i++) {
-        if (node->used_slots[i].state == OBJ_CONTINUED) {
+    for (int i = slot_index + 1; i < node->avliable_slot; i++)
+    {
+        if (node->used_slots[i].state == OBJ_CONTINUED)
+        {
             node->used_slots[i].state = BOX_UNUSED;
             node->used_slots[i].continue_max = 16;
-        } else {
+        }
+        else
+        {
             break;
         }
     }
 
     // 更新连续最大空闲槽位计数
-    uint8_t new_max = box_continuous_max(node);
-    if (node->max_obj_capacity != new_max) {
 
-        update_parent(meta, node);
+    // todo:
+    uint8_t new_max = box_continuous_max(node);
+    if (node->max_obj_capacity != new_max)
+    {
+        node->max_obj_capacity = new_max;
+        box_head *parent = block_data(&meta->blocks, node->parent);
+        update_parent(meta, parent, false, true);
     }
 
     LOG("Object successfully freed");

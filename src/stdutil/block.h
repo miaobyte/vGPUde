@@ -19,6 +19,11 @@ typedef struct
 
 int init_blocks(void *block_start,const uint64_t total_size, const uint64_t block_size,blocks_meta* blocks );
 
+/*
+下一步优化点
+
+block_t 结构体中的 id 字段可以考虑去掉，因为它可以通过计算块的起始地址来推导出来，减少内存开销。    
+*/
 typedef struct
 {
     uint64_t id;
