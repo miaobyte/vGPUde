@@ -63,7 +63,8 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
     size_t index_size = TrieKV_indexnode_size(meta);
 
     LOG("index size: %u", meta->index_size);
-    blocks_init( pool_size - sizeof(TrieKVMeta), index_size, &meta->blocks);
+    void *block_start = (void *)pool + sizeof(TrieKVMeta);
+    blocks_init( block_start,pool_size - sizeof(TrieKVMeta), index_size, &meta->blocks);
 
     // rootnode
     blocks_alloc(&meta->blocks); // 分配根节点
@@ -95,14 +96,15 @@ void triekv_set(const bytes_t pool, const bytes_t key, const uint64_t value)
         if (*childi < 0)
         {
             // 如果没有子节点，分配一个新的节点
-            block_t *new_block = blocks_alloc(&meta->blocks);
-            if (!new_block)
+            int64_t new_block_id = blocks_alloc(&meta->blocks);
+            if (new_block_id<0)
             {
+                LOG("Failed to allocate new block for char %c at depth %zu", char_index, i);
                 return;
             }
-            cur_node = block_data(&meta->blocks, new_block->id);
+            cur_node = block_data(&meta->blocks,new_block_id);
             TrieKV_indexnode_init(meta, cur_node); // 初始化新节点
-            *childi = new_block->id;               // 更新当前节点的子节点指针
+            *childi = new_block_id;               // 更新当前节点的子节点指针
         }
         else
         {

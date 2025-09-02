@@ -6,21 +6,21 @@
 #include "stdutil/block.h"
 
 void test_alloc(blocks_meta_t *blocks) {
-    block_t* block ;
+
     for (size_t i = 0; i < 62; i++) {
-        block= blocks_alloc(blocks);
-        assert(block->id != (size_t)-1);
-        printf("Allocated block id: %lu\n", block->id);
+        int64_t block_id= blocks_alloc(blocks);
+        assert(block_id != (size_t)-1);
+        printf("Allocated block id: %lu\n", block_id);
     }
 }
 
 #include <stdlib.h> // 用于随机数生成
 #include <time.h>   // 用于随机数种子
 void test_free(blocks_meta_t *blocks) {
-    block_t* block = blocks_alloc(blocks);
+    int64_t block_id = blocks_alloc(blocks);
     for(int i=0;i<10;i++){
-         block=blocks_alloc(blocks);
-         LOG("alloc block %zu,used %d ,next.freeid %zu",block->id,block->used,block->free_next_id);
+         block_id = blocks_alloc(blocks);
+         LOG("alloc block %zu ",block_id);
     }
     blocks_free(blocks,9);
     blocks_alloc(blocks);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     BYTES_BUFFER(pool, 1024 * 4);
     blocks_meta_t blocks;
-    blocks_init(pool.len, 64, &blocks);
+    blocks_init(pool.data,pool.len, 64, &blocks);
 
     switch (test_type) {
         case 1:

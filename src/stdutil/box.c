@@ -134,10 +134,14 @@ int box_init(void *metaptr, size_t buddysize, void *boxstart, size_t box_size)
         .rootbox = boxstart,
         .box_size = box_size,
     };
- 
-    blocks_init(buddysize - sizeof(box_meta), sizeof(box_head), &meta->blocks);
-    block_t *block = blocks_alloc(&meta->blocks); // 分配根节点
-    box_head *root_boxhead = block_data(&meta->blocks, block->id);
+    void *block_start = metaptr + sizeof(box_meta);
+    blocks_init(block_start,buddysize - sizeof(box_meta), sizeof(box_head), &meta->blocks);
+    int64_t block_id = blocks_alloc(&meta->blocks); // 分配根节点
+    if(block_id<0){
+        LOG("Failed to allocate root block");
+        return -1;
+    }
+    box_head *root_boxhead = block_data(&meta->blocks, block_id);
     if (!root_boxhead)
     {
         LOG("Failed to allocate root node");
@@ -380,11 +384,16 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, box_head *parent,
                 if (node->childs_blockid[i] < 0)
                 {
                     // 需要分配出来
-                    block_t *child_block = blocks_alloc(&(meta->blocks));
-                    node->childs_blockid[i] = child_block->id;
-                    child = block_data(&meta->blocks, child_block->id);
-                    block_t *cur_block = block_bydata(node);
-                    box_format(meta, child, node->objlevel - 1, 16, cur_block->id);
+                    int64_t child_block_id = blocks_alloc(&(meta->blocks));
+                    if(child_block_id<0){
+                        LOG("Failed to allocate root block");
+                        return -1;
+                    }
+                    node->childs_blockid[i] = child_block_id;
+                    child = block_data(&meta->blocks, child_block_id);
+                    
+                    int64_t cur_block_id = block_bydata(node);
+                    box_format(meta, child, node->objlevel - 1, 16, cur_block_id);
 
                     // 更新node中的child信息
                     node->used_slots[i].state = BOX_FORMATTED;
