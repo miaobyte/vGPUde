@@ -259,13 +259,15 @@ static void update_parent(box_meta *meta, box_head *node, bool slotstate_changed
                         newmax = childmax;
                 }
             }
-            int8_t child_max_obj_capacity_changed=compare_obj_usage( newmax,node->child_max_obj_capacity);
-            if (child_max_obj_capacity_changed!=0)
-            {   
+            int8_t child_max_obj_capacity_changed = compare_obj_usage(newmax, node->child_max_obj_capacity);
+            if (child_max_obj_capacity_changed != 0)
+            {
                 // 发生变化
                 node->child_max_obj_capacity = newmax;
-            }else{
-                slot_mac_obj_capacity_changed=false;
+            }
+            else
+            {
+                slot_mac_obj_capacity_changed = false;
             }
         }
     }
@@ -488,33 +490,38 @@ void box_free(void *metaptr, void *ptr)
             return;
         }
     }
-
-    // 释放槽位
-    node->used_slots[slot_index].state = BOX_UNUSED;
-    node->used_slots[slot_index].continue_max = 16;
-    for (int i = slot_index + 1; i < node->avliable_slot; i++)
+    if (found)
     {
-        if (node->used_slots[i].state == OBJ_CONTINUED)
+        // 释放槽位
+        node->used_slots[slot_index].state = BOX_UNUSED;
+        node->used_slots[slot_index].continue_max = 16;
+        for (int i = slot_index + 1; i < node->avliable_slot; i++)
         {
-            node->used_slots[i].state = BOX_UNUSED;
-            node->used_slots[i].continue_max = 16;
+            if (node->used_slots[i].state == OBJ_CONTINUED)
+            {
+                node->used_slots[i].state = BOX_UNUSED;
+                node->used_slots[i].continue_max = 16;
+            }
+            else
+            {
+                break;
+            }
         }
-        else
+
+        // 更新连续最大空闲槽位计数
+
+        // todo:
+        uint8_t new_max = box_continuous_max(node);
+        if (node->max_obj_capacity != new_max)
         {
-            break;
+            node->max_obj_capacity = new_max;
+            box_head *parent = block_data(&meta->blocks, node->parent);
+            update_parent(meta, parent, false, true);
         }
-    }
 
-    // 更新连续最大空闲槽位计数
-
-    // todo:
-    uint8_t new_max = box_continuous_max(node);
-    if (node->max_obj_capacity != new_max)
+        LOG("Object successfully freed");
+    }else
     {
-        node->max_obj_capacity = new_max;
-        box_head *parent = block_data(&meta->blocks, node->parent);
-        update_parent(meta, parent, false, true);
+        LOG("Error: Object not found in the boxmalloc");
     }
-
-    LOG("Object successfully freed");
 }
