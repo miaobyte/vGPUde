@@ -14,8 +14,8 @@ typedef struct
     // extra
     uint16_t index_size;
 
-    // blocks_meta
-    blocks_meta blocks;
+    // blocks_meta_t
+    blocks_meta_t blocks;
 } __attribute__((packed)) TrieKVMeta;
 
  
@@ -63,8 +63,7 @@ int triekv_setmeta(const void *pool, const uint64_t pool_size, const uint16_t ch
     size_t index_size = TrieKV_indexnode_size(meta);
 
     LOG("index size: %u", meta->index_size);
-    void *block_start = (void *)pool + sizeof(TrieKVMeta);
-    init_blocks(block_start, pool_size - sizeof(TrieKVMeta), index_size, &meta->blocks);
+    blocks_init( pool_size - sizeof(TrieKVMeta), index_size, &meta->blocks);
 
     // rootnode
     blocks_alloc(&meta->blocks); // 分配根节点

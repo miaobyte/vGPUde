@@ -1,24 +1,23 @@
 #include "stdutil/block.h"
 
-int init_blocks(void *block_start,const uint64_t total_size, const uint64_t block_size,blocks_meta* blocks )
+int blocks_init(const uint64_t total_size, const uint64_t block_size,blocks_meta_t* blocks )
 {
     if (total_size < sizeof(block_t))
     {
-        LOG("Total size %zu is too small for blocks_meta and block_t structures", total_size);
+        LOG("Total size %zu is too small for blocks_meta_t and block_t structures", total_size);
         return -1;
     }
-    *blocks=(blocks_meta){
+    *blocks=(blocks_meta_t){
         .total_size = total_size,
         .block_size = block_size,
         .total_blocks = 0,
         .used_blocks = 0,
         .free_next_id = -1, // 初始化为 -1，表示没有空闲块，需要新增分配
-        .start = block_start,
     };
     return 0;
 }
 
-block_t *block_ptr(const blocks_meta* blocks,const uint64_t id)
+block_t *block_ptr(const blocks_meta_t* blocks,const uint64_t id)
 {
     if (id >= (blocks->total_blocks))
     {
@@ -28,26 +27,26 @@ block_t *block_ptr(const blocks_meta* blocks,const uint64_t id)
     void *ptr =blocks->start +(sizeof(block_t) + blocks->block_size) * id;
     return (block_t *)ptr;
 }
-void *block_data(const blocks_meta* blocks,const uint64_t id)
+void *block_data(const blocks_meta_t* blocks,const uint64_t id)
 {
     void *ptr =block_ptr(blocks,id);
     if(!ptr) return NULL;
     ptr += sizeof(block_t);
     return ptr;
 }
-block_t *block_by_data(const void* blockdata){
+block_t *block_bydata(const void* blockdata){
     void *ptr=(void*)blockdata - sizeof(block_t);
     return (block_t *)ptr;
 }
-block_t* blocks_alloc(blocks_meta* blocks)
+block_t* blocks_alloc(blocks_meta_t* blocks)
 {
     if (blocks->free_next_id == -1)
     {
         uint64_t totalused_size = blocks->total_blocks * blocks->block_size;
         if (totalused_size + blocks->block_size > blocks->total_size)
         {
-            LOG("Out of memory. %zu(totalused_size)= %zu(blocks_meta)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
-                totalused_size, sizeof(blocks_meta), blocks->total_blocks, blocks->block_size, blocks->total_size);
+            LOG("Out of memory. %zu(totalused_size)= %zu(blocks_meta_t)+ %zu(total_blocks)*%zu(block_size),when total_size %zu",
+                totalused_size, sizeof(blocks_meta_t), blocks->total_blocks, blocks->block_size, blocks->total_size);
             return NULL;
         }
         else
@@ -80,7 +79,7 @@ block_t* blocks_alloc(blocks_meta* blocks)
     return free_block;
 }
 
-void blocks_free(blocks_meta *blocks,const uint64_t id)
+void blocks_free(blocks_meta_t *blocks,const uint64_t id)
 {
     LOG("block id %zu ->free", id);
     if (id >= blocks->total_blocks)

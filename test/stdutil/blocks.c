@@ -5,7 +5,7 @@
 #include "stdutil/bytes.h"
 #include "stdutil/block.h"
 
-void test_alloc(blocks_meta *blocks) {
+void test_alloc(blocks_meta_t *blocks) {
     block_t* block ;
     for (size_t i = 0; i < 62; i++) {
         block= blocks_alloc(blocks);
@@ -16,7 +16,7 @@ void test_alloc(blocks_meta *blocks) {
 
 #include <stdlib.h> // 用于随机数生成
 #include <time.h>   // 用于随机数种子
-void test_free(blocks_meta *blocks) {
+void test_free(blocks_meta_t *blocks) {
     block_t* block = blocks_alloc(blocks);
     for(int i=0;i<10;i++){
          block=blocks_alloc(blocks);
@@ -48,8 +48,8 @@ int main(int argc, char *argv[]) {
     int test_type = atoi(argv[1]); // 将 argv[1] 转换为整数
 
     BYTES_BUFFER(pool, 1024 * 4);
-    blocks_meta blocks;
-    init_blocks(pool.data, pool.len, 64, &blocks);
+    blocks_meta_t blocks;
+    blocks_init(pool.len, 64, &blocks);
 
     switch (test_type) {
         case 1:

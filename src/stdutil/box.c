@@ -76,7 +76,7 @@ typedef struct
     void *rootbox;      // 指向块内存起始位置
     uint64_t box_size;  // 总内存大小，不可变，内存长度必须=16^n*x,n>=1，x=[1,15]
 
-    blocks_meta blocks;
+    blocks_meta_t blocks;
 } __attribute__((packed)) box_meta;
 
 typedef enum
@@ -134,8 +134,8 @@ int box_init(void *metaptr, size_t buddysize, void *boxstart, size_t box_size)
         .rootbox = boxstart,
         .box_size = box_size,
     };
-    void *block_start = metaptr + sizeof(box_meta);
-    init_blocks(block_start, buddysize - sizeof(box_meta), sizeof(box_head), &meta->blocks);
+ 
+    blocks_init(buddysize - sizeof(box_meta), sizeof(box_head), &meta->blocks);
     block_t *block = blocks_alloc(&meta->blocks); // 分配根节点
     box_head *root_boxhead = block_data(&meta->blocks, block->id);
     if (!root_boxhead)
@@ -383,7 +383,7 @@ static uint64_t box_find_alloc(box_meta *meta, box_head *node, box_head *parent,
                     block_t *child_block = blocks_alloc(&(meta->blocks));
                     node->childs_blockid[i] = child_block->id;
                     child = block_data(&meta->blocks, child_block->id);
-                    block_t *cur_block = block_by_data(node);
+                    block_t *cur_block = block_bydata(node);
                     box_format(meta, child, node->objlevel - 1, 16, cur_block->id);
 
                     // 更新node中的child信息
@@ -472,7 +472,7 @@ void box_free(void *metaptr, void *ptr)
         if (node->used_slots[slot_index].state == OBJ_START)
         {
             found = true;
-            return;
+            break;
         }
         else if (node->used_slots[slot_index].state == BOX_FORMATTED)
         {
@@ -486,7 +486,7 @@ void box_free(void *metaptr, void *ptr)
         }
         else
         {
-            LOG("Error: Invalid state encountered during free");
+            LOG("Error in free: Invalid state %d", node->used_slots[slot_index].state);
             return;
         }
     }
