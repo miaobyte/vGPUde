@@ -2,24 +2,22 @@ cmake_minimum_required(VERSION 3.10)
 project(HAMi_vGPUde)
 
 set(CMAKE_C_STANDARD 11)
-
 set(CMAKE_BUILD_TYPE Debug)
-option(ENABLE_LOG "Enable logging" ON)
 
-# 将节点数量传递为编译器定义
+find_package(CUDAToolkit REQUIRED)
+include_directories(${CUDAToolkit_INCLUDE_DIRS})
 
 include_directories(src)
-include_directories(src/stdutil)
-file(GLOB_RECURSE stdutil_SOURCES "src/stdutil/*.c")
-add_library(stdutil SHARED 
-${stdutil_SOURCES}
+file(GLOB_RECURSE  SOURCES "src/*.c")
+add_library(vGPUde SHARED 
+${SOURCES}
 )
 
 
-# 如果 ENABLE_LOG 被设置为 ON，则定义 ENABLE_LOG 宏
-if(ENABLE_LOG)
-    target_compile_definitions(stdutil PRIVATE ENABLE_LOG)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(vGPUde PRIVATE ENABLE_LOG) # 在 Debug 模式下定义 ENABLE_LOG
 endif()
+ 
 
-add_subdirectory(test)
+# add_subdirectory(test)
 

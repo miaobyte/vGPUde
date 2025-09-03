@@ -1,0 +1,1 @@
+g++ -o decode_test decode_test.c -I/usr/local/cuda/include -L/usr/local/cuda/lib64 -lcuda -lnvcuvid
