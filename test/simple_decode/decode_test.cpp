@@ -8,16 +8,20 @@
 
 // 错误检查宏
 #define CHECK_CUDA(call)                                                                                 \
-    do                                                                                                   \
-    {                                                                                                    \
-        CUresult err = call;                                                                             \
-        if (err != CUDA_SUCCESS)                                                                         \
-        {                                                                                                \
-            const char *errStr;                                                                          \
-            cuGetErrorString(err, &errStr);                                                              \
-            std::cerr << "CUDA Error: " << errStr << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-            exit(EXIT_FAILURE);                                                                          \
-        }                                                                                                \
+    do {                                                                             \
+        CUresult err = call;                                                         \
+        if (err != CUDA_SUCCESS) {                                                   \
+            const char* error_str = nullptr;                                         \
+            const char* error_name = nullptr;                                        \
+            cuGetErrorString(err, &error_str);                                       \
+            cuGetErrorName(err, &error_name);                                        \
+            std::cerr << "CUDA Error: " << (error_name ? error_name : "Unknown error") \
+                      << " - " << (error_str ? error_str : "No description available") \
+                      << " (Error Code: " << err << ")"                              \
+                      << " at " << __FILE__ << ":" << __LINE__                       \
+                      << " in function " << __func__ << std::endl;                   \
+            throw std::runtime_error("CUDA Error occurred.");                        \
+        }                                                                            \
     } while (0)
 
 // 全局变量
