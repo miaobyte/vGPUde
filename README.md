@@ -29,3 +29,31 @@ export LD_PRELOAD=/path/to/libvgpude.so
 
 - [HAMi-core 项目](https://github.com/Project-HAMi/HAMi-core)
 
+
+ T cuvidConvertYUVToRGB
+ T cuvidConvertYUVToRGBArray
+ T cuvidCreateDecoder
+ T cuvidCreateVideoParser
+ T cuvidCreateVideoSource
+ T cuvidCreateVideoSourceW
+ T cuvidCtxLock
+ T cuvidCtxLockCreate
+ T cuvidCtxLockDestroy
+ T cuvidCtxUnlock
+ T cuvidDecodePicture
+ T cuvidDestroyDecoder
+ T cuvidDestroyVideoParser
+ T cuvidDestroyVideoSource
+ T cuvidGetDecodeStatus
+ T cuvidGetDecoderCaps
+ T cuvidGetSourceAudioFormat
+ T cuvidGetSourceVideoFormat
+ T cuvidGetVideoSourceState
+ T cuvidMapVideoFrame
+ T cuvidMapVideoFrame64
+ T cuvidParseVideoData
+ T cuvidPrivateOp
+ T cuvidReconfigureDecoder
+ T cuvidSetVideoSourceState
+ T cuvidUnmapVideoFrame
+ T cuvidUnmapVideoFrame64

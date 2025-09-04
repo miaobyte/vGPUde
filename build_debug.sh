@@ -1,3 +1,4 @@
+unset LD_PRELOAD
 clear
 mkdir -p build
 rm -rf build/*

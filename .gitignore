@@ -3,3 +3,7 @@
 
 build
 test/data/
+*.app
+
+nio
+ffmpegsrc
